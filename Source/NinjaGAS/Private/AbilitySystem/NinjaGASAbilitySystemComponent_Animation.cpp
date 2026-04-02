@@ -42,7 +42,7 @@ float UNinjaGASAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* Anim
 
 			if (AnimMontageInfo.LocalMontageInfo.AnimatingAbility.IsValid() && AnimMontageInfo.LocalMontageInfo.AnimatingAbility != AnimatingAbility)
 			{
-				// The ability that was previously animating will have already gotten the 'interrupted' callback.
+				// The ability that was previously animating will have already got the 'interrupted' callback.
 				// It may be a good idea to make this a global policy and 'cancel' the ability.
 				// 
 				// For now, we expect it to end itself when this happens.
@@ -81,14 +81,7 @@ float UNinjaGASAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* Anim
 					AbilityRepMontageInfo.RepMontageInfo.Animation = Montage;
 					AbilityRepMontageInfo.RepMontageInfo.bOverrideBlendIn = bOverrideBlendIn;
 					AbilityRepMontageInfo.RepMontageInfo.BlendInOverride = BlendInOverride;
-
-					AnimMontage_UpdateReplicatedDataForMesh(InMesh);
-					RepAnimMontageInfoForMeshes.MarkMontageDirty(AbilityRepMontageInfo);
-
-					if (AbilityActorInfo->AvatarActor != nullptr)
-					{
-						AbilityActorInfo->AvatarActor->ForceNetUpdate();
-					}
+					MarkMontageReplicationDirtyForMesh(InMesh);
 				}
 			}
 			else
@@ -140,11 +133,7 @@ void UNinjaGASAbilitySystemComponent::CurrentMontageStopForMesh(USkeletalMeshCom
 		const float BlendOutTime = (OverrideBlendOutTime >= 0.0f ? OverrideBlendOutTime : MontageToStop->BlendOut.GetBlendTime());
 
 		AnimInstance->Montage_Stop(BlendOutTime, MontageToStop);
-
-		if (IsOwnerActorAuthoritative())
-		{
-			AnimMontage_UpdateReplicatedDataForMesh(InMesh);
-		}
+		MarkMontageReplicationDirtyForMesh(InMesh);
 	}	
 }
 
@@ -191,9 +180,10 @@ void UNinjaGASAbilitySystemComponent::CurrentMontageJumpToSectionForMesh(USkelet
 	if ((SectionName != NAME_None) && AnimInstance && AnimMontageInfo.LocalMontageInfo.AnimMontage)
 	{
 		AnimInstance->Montage_JumpToSection(SectionName, AnimMontageInfo.LocalMontageInfo.AnimMontage);
+		
 		if (IsOwnerActorAuthoritative())
 		{
-			AnimMontage_UpdateReplicatedDataForMesh(InMesh);
+			MarkMontageReplicationDirtyForMesh(InMesh);
 		}
 		else
 		{
@@ -214,7 +204,7 @@ void UNinjaGASAbilitySystemComponent::CurrentMontageSetNextSectionNameForMesh(US
 		// Update replicated version for Simulated Proxies if we are on the server.
 		if (IsOwnerActorAuthoritative())
 		{
-			AnimMontage_UpdateReplicatedDataForMesh(InMesh);
+			MarkMontageReplicationDirtyForMesh(InMesh);
 		}
 		else
 		{
@@ -236,7 +226,7 @@ void UNinjaGASAbilitySystemComponent::CurrentMontageSetPlayRateForMesh(USkeletal
 		// Update replicated version for Simulated Proxies if we are on the server.
 		if (IsOwnerActorAuthoritative())
 		{
-			AnimMontage_UpdateReplicatedDataForMesh(InMesh);
+			MarkMontageReplicationDirtyForMesh(InMesh);
 		}
 		else
 		{
@@ -478,7 +468,7 @@ void UNinjaGASAbilitySystemComponent::PostAnimationEntryChange(FGameplayAbilityR
 					const int32 CurrentSectionID = AnimMontageInfo.LocalMontageInfo.AnimMontage->GetSectionIndexFromPosition(AnimInstance->Montage_GetPosition(AnimMontageInfo.LocalMontageInfo.AnimMontage));
 					if ((CurrentSectionID != RepSectionID) && (CurrentSectionID != RepNextSectionID))
 					{
-						// Client is in a wrong section, teleport him into the begining of the right section
+						// Client is in a wrong section, teleport him into the beginning of the right section
 						const float SectionStartTime = AnimMontageInfo.LocalMontageInfo.AnimMontage->GetAnimCompositeSection(RepSectionID).GetTime();
 						AnimInstance->Montage_SetPosition(AnimMontageInfo.LocalMontageInfo.AnimMontage, SectionStartTime);
 					}
@@ -525,6 +515,24 @@ FGameplayAbilityLocalAnimMontageForMesh& UNinjaGASAbilitySystemComponent::GetLoc
 	const FGameplayAbilityLocalAnimMontageForMesh MontageInfo = FGameplayAbilityLocalAnimMontageForMesh(InMesh);
 	LocalAnimMontageInfoForMeshes.Add(MontageInfo);
 	return LocalAnimMontageInfoForMeshes.Last();	
+}
+
+void UNinjaGASAbilitySystemComponent::MarkMontageReplicationDirtyForMesh(USkeletalMeshComponent* InMesh)
+{
+	if (!IsOwnerActorAuthoritative() || !IsValid(InMesh))
+	{
+		return;
+	}
+
+	FGameplayAbilityRepAnimMontageForMesh& RepEntry = RepAnimMontageInfoForMeshes.GetGameplayAbilityRepAnimMontageForMesh(InMesh);
+
+	AnimMontage_UpdateReplicatedDataForMesh(RepEntry);
+	RepAnimMontageInfoForMeshes.MarkMontageDirty(RepEntry);
+
+	if (AbilityActorInfo->AvatarActor != nullptr)
+	{
+		AbilityActorInfo->AvatarActor->ForceNetUpdate();
+	}
 }
 
 void UNinjaGASAbilitySystemComponent::OnPredictiveMontageRejectedForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* PredictiveMontage)
@@ -638,7 +646,7 @@ void UNinjaGASAbilitySystemComponent::ServerCurrentMontageSetNextSectionNameForM
 			// Update replicated version for Simulated Proxies if we are on the server.
 			if (IsOwnerActorAuthoritative())
 			{
-				AnimMontage_UpdateReplicatedDataForMesh(InMesh);
+				MarkMontageReplicationDirtyForMesh(InMesh);
 			}
 		}
 	}	
@@ -668,7 +676,7 @@ void UNinjaGASAbilitySystemComponent::ServerCurrentMontageJumpToSectionNameForMe
 			// Update replicated version for Simulated Proxies if we are on the server.
 			if (IsOwnerActorAuthoritative())
 			{
-				AnimMontage_UpdateReplicatedDataForMesh(InMesh);
+				MarkMontageReplicationDirtyForMesh(InMesh);
 			}
 		}
 	}	
@@ -697,7 +705,7 @@ void UNinjaGASAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Imp
 			// Update replicated version for Simulated Proxies if we are on the server.
 			if (IsOwnerActorAuthoritative())
 			{
-				AnimMontage_UpdateReplicatedDataForMesh(InMesh);
+				MarkMontageReplicationDirtyForMesh(InMesh);
 			}
 		}
 	}	

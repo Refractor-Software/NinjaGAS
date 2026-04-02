@@ -351,6 +351,12 @@ protected:
 
 	FGameplayAbilityLocalAnimMontageForMesh& GetLocalAnimMontageInfoForMesh(USkeletalMeshComponent* InMesh);
 
+	/**
+	 * Helper that marks the montage dirty, requiring replication.
+	 */
+	UFUNCTION()
+	void MarkMontageReplicationDirtyForMesh(USkeletalMeshComponent* InMesh);
+	
 	// Called when a prediction key that played a montage is rejected
 	virtual void OnPredictiveMontageRejectedForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* PredictiveMontage);
 
