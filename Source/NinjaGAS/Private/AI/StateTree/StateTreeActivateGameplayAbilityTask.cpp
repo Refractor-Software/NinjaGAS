@@ -18,8 +18,8 @@ bool FStateTreeActivateGameplayAbilityTaskInstanceData::CheckAbilityThatHasEnded
 		return false;
 	}
 	
-#if ENGINE_MINOR_VERSION == 5 && ENGINE_MINOR_VERSION < 5
-	AbilityThatEndedTags.AppendTags(Data.AbilityThatEnded->AbilityTags);
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 5
+	AbilityThatEndedTags.AppendTags(AbilityEndedData.AbilityThatEnded->AbilityTags);
 #else
 	AbilityThatEndedTags.AppendTags(AbilityEndedData.AbilityThatEnded->GetAssetTags());
 #endif
@@ -51,7 +51,6 @@ EStateTreeRunStatus FStateTreeActivateGameplayAbilityTask::EnterState(FStateTree
 
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 	InstanceData.bAbilityHasEnded = false;
-	InstanceData.AbilitySpecHandle = FGameplayAbilitySpecHandle();
 	InstanceData.AbilityComponent = AbilityComponent;
 
 	return ActivateAbility(Context);
@@ -94,7 +93,6 @@ EStateTreeRunStatus FStateTreeActivateGameplayAbilityTask::ActivateAbility(const
 			{
 				InstanceDataPtr->bAbilityHasEnded = true;
 				InstanceDataPtr->AbilityThatEnded = AbilityEndedData.AbilityThatEnded;
-				InstanceDataPtr->AbilitySpecHandle = AbilityEndedData.AbilitySpecHandle;
 				InstanceDataPtr->bAbilityWasCancelled = AbilityEndedData.bWasCancelled;
 				InstanceDataPtr->ResetBindings();
 			}
@@ -130,7 +128,7 @@ EStateTreeRunStatus FStateTreeActivateGameplayAbilityTask::Tick(FStateTreeExecut
 		// Check what is the correct status, based on the parameters assigned to the instance.
 		if (bShouldFinishStateWhenAbilityCompletes)
 		{
-			Status = InstanceData.bAbilityWasCancelled || !bTreatCancelledAbilityAsSuccess
+			Status = InstanceData.bAbilityWasCancelled && !bTreatCancelledAbilityAsSuccess
 				? EStateTreeRunStatus::Failed
 				: EStateTreeRunStatus::Succeeded;
 		}
@@ -160,14 +158,7 @@ void FStateTreeActivateGameplayAbilityTask::ExitState(FStateTreeExecutionContext
 				TEXT("FStateTreeActivateGameplayAbilityTask forcing cancellation of ability activated by %s."),
 				*InstanceData.AbilityActivationTags.ToStringSimple());
 
-			if (InstanceData.AbilitySpecHandle.IsValid())
-			{
-				AbilityComponent->CancelAbilityHandle(InstanceData.AbilitySpecHandle);
-			}
-			else
-			{
-				AbilityComponent->CancelAbilities(&InstanceData.AbilityActivationTags);
-			}
+			AbilityComponent->CancelAbilities(&InstanceData.AbilityActivationTags);
 		}		
 	}
 	

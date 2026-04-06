@@ -9,15 +9,7 @@
 
 EStateTreeRunStatus FStateTreeCancelGameplayAbilityTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
 {
-	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-	if (!InstanceData.AIController)
-	{
-		UE_VLOG(Context.GetOwner(), LogStateTree, Error, TEXT("FStateTreeCancelGameplayAbilityTask failed since AIController is missing."));
-		return EStateTreeRunStatus::Failed;
-	}
-
-	const APawn* Pawn = InstanceData.AIController->GetPawn();
-	UAbilitySystemComponent* AbilityComponent = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Pawn);
+	UAbilitySystemComponent* AbilityComponent = GetAbilitySystemComponent(Context);
 	if (!AbilityComponent)
 	{
 		UE_VLOG(Context.GetOwner(), LogStateTree, Error, TEXT("FStateTreeCancelGameplayAbilityTask failed since Pawn does not have an ASC."));
@@ -25,6 +17,24 @@ EStateTreeRunStatus FStateTreeCancelGameplayAbilityTask::EnterState(FStateTreeEx
 	}
 
 	return CancelAbilities(Context, AbilityComponent);
+}
+
+UAbilitySystemComponent* FStateTreeCancelGameplayAbilityTask::GetAbilitySystemComponent(const FStateTreeExecutionContext& Context)
+{
+	const AActor* OwnerActor = Cast<AActor>(Context.GetOwner());
+	if (!IsValid(OwnerActor))
+	{
+		return nullptr;
+	}
+
+	if (OwnerActor->IsA<AAIController>())
+	{
+		const APawn* OwnerPawn = Cast<AAIController>(OwnerActor)->GetPawn();
+		return UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwnerPawn);
+	}
+
+	// Simply try to obtain the ASC directly from the actor (probably a pawn/character).
+	return UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwnerActor);	
 }
 
 EStateTreeRunStatus FStateTreeCancelGameplayAbilityTask::CancelAbilities(const FStateTreeExecutionContext& Context, UAbilitySystemComponent* AbilityComponent) const
@@ -36,9 +46,9 @@ EStateTreeRunStatus FStateTreeCancelGameplayAbilityTask::CancelAbilities(const F
 	}
 
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
-
-	const FGameplayTagContainer CancelAbilitiesWithTags = InstanceData.CancelAbilityWithTags;
-	const FGameplayTagContainer CancelAbilitiesWithoutTags = InstanceData.CancelAbilityWithoutTags;
+	
+	const FGameplayTagContainer& CancelAbilitiesWithTags = InstanceData.CancelAbilityWithTags;
+	const FGameplayTagContainer& CancelAbilitiesWithoutTags = InstanceData.CancelAbilityWithoutTags;
 
 	AbilityComponent->CancelAbilities(
 		CancelAbilitiesWithTags.IsValid() ? &CancelAbilitiesWithTags : nullptr,

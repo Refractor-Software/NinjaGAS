@@ -14,10 +14,6 @@ struct FStateTreeCancelGameplayAbilityTaskInstanceData
 {
 	GENERATED_BODY()
 
-	/** The AI Controller that is running the State Tree. */
-	UPROPERTY(EditAnywhere, Category = Context)
-	TObjectPtr<AAIController> AIController = nullptr;
-
 	/** If present, abilities with these tags will be cancelled. */
 	UPROPERTY(EditAnywhere, Category = Parameter)
 	FGameplayTagContainer CancelAbilityWithTags = FGameplayTagContainer::EmptyContainer;
@@ -43,6 +39,12 @@ struct NINJAGAS_API FStateTreeCancelGameplayAbilityTask : public FStateTreeTaskC
 
 protected:
 
+	/**
+	 * Retrieves the Ability System component from the context owner.
+	 * It will attempt to find the ASC for an owner that is an AI Controller or Pawn.
+	 */
+	static UAbilitySystemComponent* GetAbilitySystemComponent(const FStateTreeExecutionContext& Context);	
+	
 	/**
 	 * Cancels the ability requested in the context.
 	 *

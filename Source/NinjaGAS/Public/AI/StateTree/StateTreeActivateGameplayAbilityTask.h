@@ -3,6 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
+#include "StateTreePropertyRef.h"
 #include "StateTreeTaskBase.h"
 #include "StateTreeActivateGameplayAbilityTask.generated.h"
 
@@ -16,9 +17,13 @@ struct FStateTreeActivateGameplayAbilityTaskInstanceData
 	UPROPERTY(EditAnywhere, Category = Parameter)
 	FGameplayTagContainer AbilityActivationTags = FGameplayTagContainer::EmptyContainer;
 	
-	/** Spec for the Gameplay Ability that has Ended. */
-	UPROPERTY(EditAnywhere, Category = Output)
-	FGameplayAbilitySpecHandle AbilitySpecHandle = FGameplayAbilitySpecHandle();
+	/** Informs when the ability has ended. */
+	UPROPERTY(EditAnywhere, Category = Out)
+	bool bAbilityHasEnded = false;
+	
+	/** Informs if this ability was cancelled. */
+	UPROPERTY(EditAnywhere, Category = Out)
+	bool bAbilityWasCancelled = false;
 
 	/** The last ability that has ended. */
 	TWeakObjectPtr<UGameplayAbility> AbilityThatEnded;
@@ -26,14 +31,6 @@ struct FStateTreeActivateGameplayAbilityTaskInstanceData
 	/** Owner Ability System Component. */
 	TWeakObjectPtr<UAbilitySystemComponent> AbilityComponent;
 	
-	/** Informs when the ability has ended. */
-	UPROPERTY(EditAnywhere, Category = Output)
-	bool bAbilityHasEnded = false;
-	
-	/** Informs if this ability was cancelled. */
-	UPROPERTY(EditAnywhere, Category = Output)
-	bool bAbilityWasCancelled = false;
-
 	/** Delegate Handle provided by the ASC. */
 	FDelegateHandle AbilityEndedDelegateHandle;
 
@@ -45,7 +42,7 @@ struct FStateTreeActivateGameplayAbilityTaskInstanceData
 
 	/**
 	 * Reset the bindings, keeping the outcome data (ability ended, cancellation, spec, etc.). 
-	 * This will clear the handle and ability system component, which are not needed anymore
+	 * This will clear the handle and ability system component, which are not needed any more
 	 */
 	void ResetBindings();
 	
