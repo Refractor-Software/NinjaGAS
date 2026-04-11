@@ -67,8 +67,8 @@ void ANinjaGASPlayerPawn::SetupAbilitySystemComponent(AActor* AbilitySystemOwner
 		return;
 	}
 	
-	CustomAbilityComponent->InitAbilityActorInfo(AbilitySystemOwner, this);
-	PawnAbilitiesPtr = CustomAbilityComponent;	
+	PawnAbilitiesPtr = CustomAbilityComponent;
+	PawnAbilitiesPtr->InitAbilityActorInfo(AbilitySystemOwner, this);
 }
 
 void ANinjaGASPlayerPawn::ClearAbilitySystemComponent()

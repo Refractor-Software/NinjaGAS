@@ -67,8 +67,8 @@ void ANinjaGASPlayerCharacter::SetupAbilitySystemComponent(AActor* AbilitySystem
 		return;
 	}
 	
-	CustomAbilityComponent->InitAbilityActorInfo(AbilitySystemOwner, this);
-	CharacterAbilitiesPtr = CustomAbilityComponent;	
+	CharacterAbilitiesPtr = CustomAbilityComponent;
+	CharacterAbilitiesPtr->InitAbilityActorInfo(AbilitySystemOwner, this);
 }
 
 void ANinjaGASPlayerCharacter::ClearAbilitySystemComponent()
