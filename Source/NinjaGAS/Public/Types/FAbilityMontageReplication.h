@@ -11,6 +11,7 @@
 
 #include "Abilities/GameplayAbilityRepAnimMontage.h"
 #include "Abilities/GameplayAbilityTypes.h"
+#include "Animation/AnimMontage.h"
 #include "FAbilityMontageReplication.generated.h"
 
 class UPackageMap;
